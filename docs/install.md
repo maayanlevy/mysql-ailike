@@ -2,15 +2,20 @@
 
 AILIKE installs as two native shared libraries.
 
-Verified locally on Linux ARM64 (Oracle Linux 9, glibc 2.34):
+Verified on 2026-09-19 (Oracle Linux 9 containers, glibc 2.34):
 
-| MySQL version | Installation and SQL tests | Live Jev + Sakila |
-| --- | --- | --- |
-| 8.4.8 | 31 checks passed | 24 judgments passed |
-| 8.0.46 | 31 checks passed | Not run |
+| Platform | MySQL | Installation and SQL tests | Live Jev + Sakila |
+| --- | --- | --- | --- |
+| Linux ARM64 | 8.4.8 | 31 checks passed locally | 24 judgments passed |
+| Linux ARM64 | 8.0.46 | 31 checks passed locally | Not run |
+| Linux AMD64 | 8.4.8 | 31 checks passed in CI | Not run |
+| Linux AMD64 | 8.0.46 | 31 checks passed in CI | Not run |
 
-Linux AMD64 is covered by the CI workflow; check its run before treating that
-platform as verified. Other MySQL versions, MariaDB, Windows, and macOS are not
+[Verified CI run](https://github.com/maayanlevy/mysql-ailike/actions/runs/35467550109).
+The exported ARM64 bundle was also installed into an already-running test server
+and remained registered after a restart.
+
+Other MySQL versions, MariaDB, Windows, and macOS are not
 verified. The shared libraries require glibc 2.34 or newer, libcurl 7.76 or newer
 (`libcurl.so.4`), and a compatible `libstdc++.so.6`. Match your server's CPU
 architecture.

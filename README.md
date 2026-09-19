@@ -8,8 +8,7 @@ FROM film
 WHERE description AILIKE 'The story takes place somewhere in Asia';
 ```
 
-AILIKE is a native MySQL plugin. It runs inside your existing server, with no proxy
-or companion service.
+AILIKE is a native MySQL plugin that runs inside your existing server.
 
 **[Plugin bundles, installation, and verified compatibility →](docs/install.md)**
 

@@ -2,19 +2,20 @@
 
 AILIKE installs as two native shared libraries.
 
-The v0.1.0 compatibility baseline was verified on 2026-09-19 (Oracle Linux 9
-containers, glibc 2.34):
+The v0.2.0 implementation was verified on 2026-09-20 (Oracle Linux 9 containers,
+glibc 2.34):
 
-| Platform | MySQL | Installation and SQL tests | Live Jev + Sakila |
+| Platform | MySQL | Installation and SQL tests | Live Jev judgments |
 | --- | --- | --- | --- |
-| Linux ARM64 | 8.4.8 | 31 checks passed locally | 24 judgments passed |
-| Linux ARM64 | 8.0.46 | 31 checks passed locally | Not run |
-| Linux AMD64 | 8.4.8 | 31 checks passed in CI | Not run |
-| Linux AMD64 | 8.0.46 | 31 checks passed in CI | Not run |
+| Linux ARM64 | 8.4.8 | 63 checks passed locally | 24 Sakila + 6 synthetic pair judgments passed |
+| Linux ARM64 | 8.0.46 | 63 checks passed locally | Not run |
+| Linux AMD64 | 8.4.8 | 63 checks passed in CI | Not run |
+| Linux AMD64 | 8.0.46 | 63 checks passed in CI | Not run |
 
-[Verified CI run](https://github.com/maayanlevy/mysql-ailike/actions/runs/35467550109).
-The exported ARM64 bundle was also installed into an already-running test server
-and remained registered after a restart.
+[Verified CI run](https://github.com/maayanlevy/mysql-ailike/actions/runs/35471276723).
+SQL checks cover both function forms, joined columns, prepared statements,
+installation, uninstallation, reinstallation, and persistence across a server
+restart. Live judgments describe these sample inputs, not an accuracy guarantee.
 
 Other MySQL versions, MariaDB, Windows, and macOS are not
 verified. The shared libraries require glibc 2.34 or newer, libcurl 7.76 or newer

@@ -22,15 +22,48 @@ architecture.
 
 You need access to the server filesystem and a MySQL administrative account. Managed services must permit custom native plugins. MySQL needs outbound HTTPS access to TypeSafe and working CA certificates.
 
-## 1. Build the plugin bundle
+## 1. Download the plugin bundle
 
-From the repository root, with Docker installed:
+On the target Linux server, start in an empty working directory. This downloads
+the `v0.1.0` bundle for the server's architecture, verifies its checksum, and
+extracts it into `dist/`:
 
 ```sh
+(
+  set -eu
+  case "$(uname -s):$(uname -m)" in
+    Linux:x86_64) arch=amd64 ;;
+    Linux:aarch64|Linux:arm64) arch=arm64 ;;
+    *) echo 'Prebuilt bundles support Linux AMD64 and ARM64 only.' >&2; exit 1 ;;
+  esac
+  release_url=https://github.com/maayanlevy/mysql-ailike/releases/download/v0.1.0
+  archive="mysql-ailike-linux-${arch}.tar.gz"
+  curl -fLO "$release_url/$archive"
+  curl -fLO "$release_url/SHA256SUMS"
+  awk -v archive="$archive" '
+    $2 == archive { print; found++ }
+    END { exit (found != 1) }
+  ' SHA256SUMS > SHA256SUMS.selected
+  sha256sum --check SHA256SUMS.selected
+  mkdir dist
+  tar -xzf "$archive" -C dist
+)
+```
+
+The bundle contains both shared libraries, installation and uninstallation SQL,
+this guide as `INSTALL.md`, and license notices. Run the remaining commands from
+the directory containing `dist/`.
+
+Alternatively, build from source with Git and Docker installed:
+
+```sh
+git clone --branch v0.1.0 --depth 1 https://github.com/maayanlevy/mysql-ailike.git
+cd mysql-ailike
 ./scripts/build-plugin.sh
 ```
 
-This exports `dist/ailike_udf.so`, `dist/ailike_rewrite.so`, `dist/install.sql`, and `dist/uninstall.sql`. Docker is used for compilation; the libraries run inside your existing MySQL server.
+This also exports the bundle into `dist/`. Docker is used for compilation; the
+libraries run inside your existing MySQL server.
 
 ## 2. Copy the libraries
 
@@ -138,6 +171,7 @@ and 1,000 uncached requests per expression. Input limits are 32 KiB for values a
 ## Releasing
 
 Pushing a `v*` tag runs the release workflow: it builds and tests Linux AMD64 and
-ARM64 bundles, then attaches archives and checksums to a GitHub release. See
+ARM64 bundles on both supported MySQL versions, then attaches archives and
+checksums to a draft GitHub release. Review the draft and publish it. See
 [Releases](https://github.com/maayanlevy/mysql-ailike/releases). The repository's
 visibility controls release visibility.

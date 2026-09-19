@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Build and test only this project's disposable MySQL + mock API containers."""
 from pathlib import Path
+import argparse
+import json
+import os
 import subprocess
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ['docker', 'compose', '-f', str(ROOT / 'compose.test.yaml')]
@@ -24,9 +28,9 @@ def sql(statement, expected=None, error=None):
             assert result.stdout.strip() == expected, (statement, result.stdout, expected)
 
 
-def main():
+def main(bundle=None):
     try:
-        compose('up', '--build', '--wait', '--wait-timeout', '180', check=True)
+        compose('up', '--no-build' if bundle else '--build', '--wait', '--wait-timeout', '180', check=True)
         sql("CREATE TABLE texts (id INT PRIMARY KEY, content TEXT, prompt TEXT);"
             "INSERT INTO texts VALUES (1,'cat','cat'),(2,'dog','cat'),(3,NULL,'cat');")
         checks = [
@@ -67,8 +71,8 @@ def main():
             "SELECT SUM(ailike(CAST(i AS CHAR),'x')) FROM n", error='MAX_REQUESTS')
         sql("WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i+1 FROM n WHERE i<20) "
             "SELECT SUM(ailike(IF(i>0,'cat','dog'),'cat')) FROM n", expected='20')
-        sql((ROOT / 'sql/uninstall.sql').read_text())
-        sql((ROOT / 'sql/install.sql').read_text())
+        sql(((bundle or ROOT / 'sql') / 'uninstall.sql').read_text())
+        sql(((bundle or ROOT / 'sql') / 'install.sql').read_text())
         sql("SELECT id FROM texts WHERE content AILIKE 'cat'", expected='1')
         sql('SELECT 1', expected='1')
         print(f'Passed {len(checks) + len(failures) + 6} MySQL integration checks.')
@@ -77,4 +81,25 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--bundle', type=Path,
+                        help='Test an extracted release bundle on stock MySQL without building')
+    args = parser.parse_args()
+    with tempfile.TemporaryDirectory(prefix='ailike-test-') as temporary:
+        bundle = args.bundle.resolve() if args.bundle else None
+        if bundle:
+            for name in ('ailike_udf.so', 'ailike_rewrite.so', 'install.sql', 'uninstall.sql'):
+                if not (bundle / name).is_file():
+                    parser.error(f'Bundle is missing {name}')
+            version = os.environ.get('MYSQL_TEST_VERSION', '8.4.8')
+            override = Path(temporary) / 'compose.json'
+            override.write_text(json.dumps({'services': {'mysql': {
+                'image': f'mysql:{version}',
+                'volumes': [
+                    f'{bundle}/ailike_udf.so:/usr/lib64/mysql/plugin/ailike_udf.so:ro',
+                    f'{bundle}/ailike_rewrite.so:/usr/lib64/mysql/plugin/ailike_rewrite.so:ro',
+                    f'{bundle}/install.sql:/docker-entrypoint-initdb.d/10-ailike.sql:ro',
+                ],
+            }}}))
+            COMPOSE.extend(['-f', str(override)])
+        main(bundle)

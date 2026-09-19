@@ -72,10 +72,19 @@ def main(bundle=None):
         sql("WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i+1 FROM n WHERE i<20) "
             "SELECT SUM(ailike(IF(i>0,'cat','dog'),'cat')) FROM n", expected='20')
         sql(((bundle or ROOT / 'sql') / 'uninstall.sql').read_text())
+        sql("SELECT COUNT(*) FROM mysql.func WHERE name='ailike'", expected='0')
+        sql("SELECT COUNT(*) FROM INFORMATION_SCHEMA.PLUGINS "
+            "WHERE PLUGIN_NAME='ailike_rewrite'", expected='0')
         sql(((bundle or ROOT / 'sql') / 'install.sql').read_text())
         sql("SELECT id FROM texts WHERE content AILIKE 'cat'", expected='1')
+        compose('restart', '--no-deps', 'mysql', check=True)
+        compose('up', '--no-build', '--no-recreate', '--wait', '--wait-timeout', '180', check=True)
+        sql('SELECT COUNT(*) FROM texts', expected='3')
+        sql("SELECT PLUGIN_STATUS FROM INFORMATION_SCHEMA.PLUGINS "
+            "WHERE PLUGIN_NAME='ailike_rewrite'", expected='ACTIVE')
+        sql("SELECT id FROM texts WHERE content AILIKE 'cat'", expected='1')
         sql('SELECT 1', expected='1')
-        print(f'Passed {len(checks) + len(failures) + 6} MySQL integration checks.')
+        print(f'Passed {len(checks) + len(failures) + 11} MySQL integration checks.')
     finally:
         compose('down', '--volumes', check=True)
 

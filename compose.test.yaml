@@ -14,7 +14,8 @@ services:
       AILIKE_TIMEOUT_MS: 1000
       AILIKE_CONNECT_TIMEOUT_MS: 500
       AILIKE_MAX_REQUESTS: 8
-    tmpfs:
+    # Anonymous test data survives restart and is removed by down --volumes.
+    volumes:
       - /var/lib/mysql
     depends_on:
       - mock

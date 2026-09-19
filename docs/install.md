@@ -2,18 +2,20 @@
 
 AILIKE installs as two native shared libraries.
 
-Verified on 2026-09-19 (Oracle Linux 9 containers, glibc 2.34):
+The v0.2.0 implementation was verified on 2026-09-20 (Oracle Linux 9 containers,
+glibc 2.34):
 
-| Platform | MySQL | Installation and SQL tests | Live Jev + Sakila |
+| Platform | MySQL | Installation and SQL tests | Live Jev judgments |
 | --- | --- | --- | --- |
-| Linux ARM64 | 8.4.8 | 31 checks passed locally | 24 judgments passed |
-| Linux ARM64 | 8.0.46 | 31 checks passed locally | Not run |
-| Linux AMD64 | 8.4.8 | 31 checks passed in CI | Not run |
-| Linux AMD64 | 8.0.46 | 31 checks passed in CI | Not run |
+| Linux ARM64 | 8.4.8 | 63 checks passed locally | 24 Sakila + 6 synthetic pair judgments passed |
+| Linux ARM64 | 8.0.46 | 63 checks passed locally | Not run |
+| Linux AMD64 | 8.4.8 | 63 checks passed in CI | Not run |
+| Linux AMD64 | 8.0.46 | 63 checks passed in CI | Not run |
 
-[Verified CI run](https://github.com/maayanlevy/mysql-ailike/actions/runs/35467550109).
-The exported ARM64 bundle was also installed into an already-running test server
-and remained registered after a restart.
+[Verified CI run](https://github.com/maayanlevy/mysql-ailike/actions/runs/35471276723).
+SQL checks cover both function forms, joined columns, prepared statements,
+installation, uninstallation, reinstallation, and persistence across a server
+restart. Live judgments describe these sample inputs, not an accuracy guarantee.
 
 Other MySQL versions, MariaDB, Windows, and macOS are not
 verified. The shared libraries require glibc 2.34 or newer, libcurl 7.76 or newer
@@ -25,7 +27,7 @@ You need access to the server filesystem and a MySQL administrative account. Man
 ## 1. Download the plugin bundle
 
 On the target Linux server, start in an empty working directory. This downloads
-the `v0.1.0` bundle for the server's architecture, verifies its checksum, and
+the `v0.2.0` bundle for the server's architecture, verifies its checksum, and
 extracts it into `dist/`:
 
 ```sh
@@ -36,7 +38,7 @@ extracts it into `dist/`:
     Linux:aarch64|Linux:arm64) arch=arm64 ;;
     *) echo 'Prebuilt bundles support Linux AMD64 and ARM64 only.' >&2; exit 1 ;;
   esac
-  release_url=https://github.com/maayanlevy/mysql-ailike/releases/download/v0.1.0
+  release_url=https://github.com/maayanlevy/mysql-ailike/releases/download/v0.2.0
   archive="mysql-ailike-linux-${arch}.tar.gz"
   curl -fLO "$release_url/$archive"
   curl -fLO "$release_url/SHA256SUMS"
@@ -57,7 +59,7 @@ the directory containing `dist/`.
 Alternatively, build from source with Git and Docker installed:
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/maayanlevy/mysql-ailike.git
+git clone --branch v0.2.0 --depth 1 https://github.com/maayanlevy/mysql-ailike.git
 cd mysql-ailike
 ./scripts/build-plugin.sh
 ```
@@ -129,7 +131,10 @@ SELECT description AILIKE 'Includes a robot' AS matches
 FROM (SELECT 'A robot helps a child.' AS description) AS example;
 ```
 
-Then use `column AILIKE 'condition'` in your queries. For function-only installation, register just the first statement in `dist/install.sql` and call `ailike(column, 'condition')`.
+Then use `column AILIKE 'condition'`, `ailike(value, prompt)`, or
+`ailike(left, right, prompt)` in your queries. For function-only installation,
+register just the first statement in `dist/install.sql`; both function forms are
+available without the rewrite plugin.
 
 To uninstall, stop queries using AILIKE and run the following before removing either library:
 
@@ -139,33 +144,58 @@ mysql -u root -p < dist/uninstall.sql
 
 See MySQL's [plugin installation](https://dev.mysql.com/doc/refman/8.4/en/plugin-loading.html) and [loadable function registration](https://dev.mysql.com/doc/refman/8.4/en/create-function-loadable.html) documentation for administrative requirements.
 
+## Upgrade
+
+Download and verify the new bundle before upgrading. Stop queries using AILIKE,
+then unregister the old installation while its libraries are still in place:
+
+```sh
+mysql -u root -p < dist/uninstall.sql
+```
+
+Replace both libraries using [step 2](#2-copy-the-libraries), then register them
+again using [step 4](#4-register-and-use-ailike) before resuming queries. Do not
+overwrite a library while it is loaded. For a function-only installation, run
+only `DROP FUNCTION IF EXISTS ailike;` before replacing its library, then register
+the function again. Existing tables and server API-key configuration are retained.
+
 ## SQL behavior
 
-`AILIKE` asks Jev a yes/no question about the column value and matches when its
-probability is at least 0.5. `NULL` stays `NULL`. The model is pinned to
+`AILIKE` asks Jev a yes/no question and matches when its probability is at least
+0.5. `ailike(value, prompt)` evaluates one value; `ailike(left, right, prompt)`
+evaluates a relationship between two values. Both values are sent as separate
+`left` and `right` data fields; the prompt describes the relationship, including
+its direction when relevant. All arguments must be strings; use
+`CAST(... AS CHAR)` for other types. Any `NULL` argument returns `NULL` without
+making an API request. The model is pinned to
 `jev-1.13.0`; `TYPESAFE_MODEL` can select another version.
 
 ```sql
 WHERE description AILIKE 'Includes a robot'
 WHERE f.description NOT AILIKE 'Set in Europe'
 WHERE ailike(CONCAT(title, ': ', description), 'Set in Europe')
+WHERE ailike(a.description, b.description, 'Left and right describe the same product type')
 ```
 
 Infix syntax supports bare, qualified, or backtick-quoted columns and single-quoted
-prompts. Use doubled single quotes inside prompts. Use the two-argument function
-for expressions, dynamic prompts, backslash escapes, or prepared statements with
-parameters: `WHERE ailike(description, ?)`. MySQL's pre-parse rewrite hook resets
+prompts. Use doubled single quotes inside prompts. Use function syntax for
+expressions, dynamic prompts, backslash escapes, or prepared statements with
+parameters: `WHERE ailike(description, ?)` or
+`WHERE ailike(a.description, b.description, ?)`. Comparing two values requires the
+three-argument function; `a.column AILIKE b.column USING 'relationship'` is not
+supported. MySQL's pre-parse rewrite hook resets
 parameter parsing, so the plugin rejects infix queries containing placeholders.
 
-Each uncached value/prompt pair makes one HTTPS request to TypeSafe. Column values
+Each uncached argument tuple makes one HTTPS request to TypeSafe. Column values
 leave the database. Narrow candidates with ordinary SQL before inference;
 `LIMIT` alone does not cap calls. There is no index or batching. Results can be
 wrong; this feature is intended for reads, not unattended data modifications or
 statement-based replication.
 
-The implementation caches duplicate pairs within each expression, limits memory,
-and aborts the statement on API failures. Defaults are a 10-second request timeout
-and 1,000 uncached requests per expression. Input limits are 32 KiB for values and
+The implementation caches duplicate argument tuples within each expression,
+including both values and the prompt for three-argument calls. Memory is bounded,
+and API failures abort the statement. Defaults are a 10-second request timeout
+and 1,000 uncached requests per expression. Input limits are 32 KiB per value and
 8 KiB for prompts. There are no automatic retries.
 
 ## Releasing

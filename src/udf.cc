@@ -37,7 +37,7 @@ struct Context {
     const auto* metadata =
         reinterpret_cast<SERVICE_TYPE(mysql_udf_metadata)*>(metadata_handle);
     char charset[] = "utf8mb4";
-    for (unsigned int i = 0; i != 2; ++i) {
+    for (unsigned int i = 0; i != args->arg_count; ++i) {
       if (metadata->argument_set(args, "charset", i, charset)) {
         throw std::runtime_error("could not configure UTF-8 text arguments");
       }
@@ -57,6 +57,11 @@ struct Context {
       client = std::make_unique<ailike_plugin::Client>(
           ailike_plugin::Settings::from_environment());
     }
+    if (args->arg_count == 3) {
+      return client->score({args->args[0], args->lengths[0]},
+                           {args->args[1], args->lengths[1]},
+                           {args->args[2], args->lengths[2]});
+    }
     return client->score({args->args[0], args->lengths[0]},
                          {args->args[1], args->lengths[1]});
   }
@@ -65,11 +70,13 @@ struct Context {
 bool initialize(UDF_INIT* initid, UDF_ARGS* args, char* message) noexcept {
   initid->ptr = nullptr;
   try {
-    if (args->arg_count != 2) {
-      throw std::runtime_error("ailike(text, prompt) requires 2 arguments");
+    if (args->arg_count != 2 && args->arg_count != 3) {
+      throw std::runtime_error("ailike(value, prompt) or ailike(left, right, prompt) requires 2 or 3 arguments");
     }
-    if (args->arg_type[0] != STRING_RESULT || args->arg_type[1] != STRING_RESULT) {
-      throw std::runtime_error("text and prompt must be strings; use CAST(... AS CHAR) explicitly");
+    for (unsigned int i = 0; i != args->arg_count; ++i) {
+      if (args->arg_type[i] != STRING_RESULT) {
+        throw std::runtime_error("values and prompt must be strings; use CAST(... AS CHAR) explicitly");
+      }
     }
     auto context = std::make_unique<Context>();
     context->acquire_services(args);

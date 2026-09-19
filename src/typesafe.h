@@ -25,10 +25,12 @@ struct Settings {
 // These pure functions also define and test the wire contract.
 std::string make_request(std::string_view value, std::string_view prompt,
                          std::string_view model);
+std::string make_request(std::string_view left, std::string_view right,
+                         std::string_view prompt, std::string_view model);
 double parse_response(std::string_view body);
 
 // One client belongs to one UDF expression, never to global server state.
-// It reuses its HTTP connection and caches a bounded set of exact input pairs.
+// It reuses its HTTP connection and caches a bounded set of exact requests.
 class Client {
  public:
   explicit Client(Settings settings);
@@ -36,6 +38,8 @@ class Client {
   Client(const Client&) = delete;
   Client& operator=(const Client&) = delete;
   double score(std::string_view value, std::string_view prompt);
+  double score(std::string_view left, std::string_view right,
+               std::string_view prompt);
 
  private:
   struct Impl;

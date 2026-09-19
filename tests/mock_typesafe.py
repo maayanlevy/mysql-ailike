@@ -13,10 +13,26 @@ class Handler(BaseHTTPRequestHandler):
         assert self.path == '/v1/systemone'
         assert self.headers['Authorization'] == 'Bearer test-key'
         assert payload['questions']['matches']['type'] == 'noul'
-        value = payload['state']['value']
         prompt = payload['questions']['matches']['instructions']['condition']
+        state = payload['state']
+        if 'left' in state:
+            assert set(state) == {'left', 'right'}
+            value, right = state['left'], state['right']
+            assert isinstance(value, str) and isinstance(right, str)
+            if prompt == 'equal':
+                matches = value == right
+            elif prompt == 'left-before-right':
+                matches = value < right
+            elif prompt == 'left-contains-right':
+                matches = right in value
+            else:
+                matches = value == right == prompt
+        else:
+            assert set(state) == {'value'}
+            value = state['value']
+            matches = value == prompt
         status = 200
-        body = {'answers': {'matches': {'type': 'noul', 'noul': 0.9 if value == prompt else 0.1}}}
+        body = {'answers': {'matches': {'type': 'noul', 'noul': 0.9 if matches else 0.1}}}
         if value.startswith('http:'):
             status = int(value[5:])
         elif value == 'malformed':

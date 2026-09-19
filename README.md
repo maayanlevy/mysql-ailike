@@ -14,7 +14,7 @@ AILIKE is a native MySQL plugin that runs inside your existing server.
 
 ## Match dates described in words
 
-Literal values also use the function form:
+Use the function form for literal values:
 
 ```sql
 SELECT ailike('2027-07-01', 'In July 2027, in the same calendar month and year.');
@@ -26,7 +26,7 @@ the natural-language condition, as in this Sakila example:
 ```sql
 SELECT rental_id, rental_date
 FROM sakila.rental
-WHERE rental_id IN (1, 1000, 3000, 5000, 10000, 15000)
+WHERE customer_id = 1
   AND ailike(CAST(rental_date AS CHAR),
              'In July 2005, in the same calendar month and year.')
 ORDER BY rental_id;

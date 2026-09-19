@@ -1,0 +1,26 @@
+name: mysql-ailike
+services:
+  mysql:
+    build: .
+    image: mysql-ailike:dev
+    environment:
+      MYSQL_ROOT_PASSWORD: local-ailike-only
+      MYSQL_DATABASE: ailike_demo
+      TYPESAFE_API_KEY_FILE: /run/secrets/typesafe_api_key
+      TYPESAFE_MODEL: ${TYPESAFE_MODEL:-jev-1.13.0}
+    secrets:
+      - typesafe_api_key
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-33316}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+volumes:
+  mysql-data:
+secrets:
+  typesafe_api_key:
+    file: ${TYPESAFE_API_KEY_FILE:-./.secrets/typesafe_api_key}

@@ -1,0 +1,44 @@
+name: release plugin
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/test.py
+      - run: MYSQL_TEST_VERSION=8.0.46 python3 scripts/test.py
+      - run: ./scripts/build-plugin.sh
+      - run: tar -czf mysql-ailike-linux-${{ matrix.arch }}.tar.gz -C dist .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-${{ matrix.arch }}
+          path: mysql-ailike-linux-${{ matrix.arch }}.tar.gz
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - run: |
+          cd artifacts
+          sha256sum *.tar.gz > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" *.tar.gz SHA256SUMS --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,0 +1,2 @@
+UNINSTALL PLUGIN ailike_rewrite;
+DROP FUNCTION IF EXISTS ailike;

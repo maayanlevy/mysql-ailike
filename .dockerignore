@@ -1,0 +1,7 @@
+.git
+.env
+.secrets
+.local
+build
+__pycache__
+dist/

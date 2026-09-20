@@ -21,6 +21,16 @@ AILIKE is a native MySQL plugin that runs inside your existing server.
 
 ## Compare joined columns
 
+After installing AILIKE and configuring its API key, run `mysql -u root -p` from
+the repository root. Load the [demo dataset](sql/join-demo.sql) into a fresh database:
+
+```sql
+CREATE DATABASE ailike_join_demo;
+USE ailike_join_demo;
+SOURCE sql/join-demo.sql;
+```
+
+The dataset contains three supplier products and three catalog products.
 Pass both columns as values and describe their relationship in the prompt:
 
 ```sql
@@ -31,9 +41,13 @@ JOIN catalog_products AS b
  AND ailike(
    a.description,
    b.description,
-   'Left and right describe the same product type, allowing different wording.'
- );
+   'Left and right describe the same kind of product, with matching material and key features. Wording may differ.'
+ )
+ORDER BY a.id, b.id;
 ```
+
+Expected matches are `(1, 1)` for the steel bottle and vacuum flask, and `(3, 3)`
+for the headphones. The glass carafe and plastic bottle have no matching pair.
 
 The two values reach Jev as separate `left` and `right` fields. Refer to those
 names when direction matters. Ordinary join conditions narrow the candidate

@@ -36,17 +36,6 @@ The condition matches a description about a pastry chef.
 
 </details>
 
-<details>
-<summary>Why does MySQL show “1 warning”?</summary>
-
-For infix queries, MySQL records a `Note` that the rewrite plugin translated
-`column AILIKE 'prompt'` into `ailike(column, 'prompt')`. Inspect it with
-`SHOW WARNINGS;`. This note does not indicate a failed query.
-
-![Rendered MySQL output: SHOW WARNINGS reports a Note explaining how the infix AILIKE query was rewritten into a function call.](docs/screenshots/rewrite-note.png)
-
-</details>
-
 | Syntax | Question |
 | --- | --- |
 | `column AILIKE 'condition'` | Does this value satisfy the condition? |

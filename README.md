@@ -1,7 +1,16 @@
 # AILIKE for MySQL
 
-Filter rows and compare text columns with natural-language conditions, powered by
-[TypeSafe Jev](https://docs.typesafe.ai).
+A native MySQL plugin for filtering rows and comparing text columns with
+natural-language conditions, powered by [TypeSafe Jev](https://docs.typesafe.ai).
+
+**[Install and check compatibility](docs/install.md) · [Try the Docker demo](docs/sample-data.md#run-the-local-demo)**
+
+Preview release. Requires a TypeSafe API key; evaluated values and prompts are
+sent to TypeSafe.
+
+## Match by meaning
+
+Find stories set in Asia when their descriptions mention China or India:
 
 ```sql
 SELECT film_id, title, description
@@ -10,42 +19,27 @@ WHERE film_id BETWEEN 1 AND 8
   AND description AILIKE 'The story takes place somewhere in Asia';
 ```
 
-Find stories set in Asia when their descriptions mention China or India.
+![AILIKE matches three Sakila films set in Ancient China or India.](docs/screenshots/asia.png)
 
-![Rendered MySQL output: AILIKE matches three Sakila films set in Ancient China or India for the prompt about Asia.](docs/screenshots/asia.png)
-
-AILIKE is a native MySQL plugin that runs inside your existing server.
-
-**[Plugin bundles, installation, and verified compatibility →](docs/install.md)**
-
-Try the query with the [Sakila sample data](docs/sample-data.md).
-
-<details>
-<summary>Another semantic match: finding someone who prepares food</summary>
-
-```sql
-SELECT film_id, title, description
-FROM sakila.film
-WHERE film_id BETWEEN 1 AND 8
-  AND description AILIKE 'The story features somebody whose profession is preparing food';
-```
-
-The condition matches a description about a pastry chef.
-
-![Rendered MySQL output: AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.png)
-
-</details>
+## Syntax
 
 | Syntax | Question |
 | --- | --- |
 | `column AILIKE 'condition'` | Does this value satisfy the condition? |
 | `ailike(value, prompt)` | Does this value satisfy the condition? |
-| `ailike(left, right, prompt)` | Do these two values satisfy the relationship? |
+| `ailike(left, right, prompt)` | Do these values satisfy the relationship? |
+
+AILIKE returns `1` for a match and `0` otherwise. Any `NULL` argument returns
+`NULL`. Arguments are strings; use `CAST(... AS CHAR)` for other types.
+
+Narrow candidates with ordinary SQL conditions: each uncached evaluation makes
+an API request.
 
 ## Compare joined columns
 
-After installing AILIKE and configuring its API key, run `mysql -u root -p` from
-the repository root. Load the [demo dataset](sql/join-demo.sql) into a fresh database:
+The [demo dataset](sql/join-demo.sql) contains three supplier products and three
+catalog products. With AILIKE installed, open `mysql -u root -p` from the repository
+root and load it into a fresh database:
 
 ```sql
 CREATE DATABASE ailike_join_demo;
@@ -53,8 +47,7 @@ USE ailike_join_demo;
 SOURCE sql/join-demo.sql;
 ```
 
-The dataset contains three supplier products and three catalog products.
-Pass both columns as values and describe their relationship in the prompt:
+Pass both columns and describe the relationship:
 
 ```sql
 SELECT a.id AS supplier_id, a.description AS supplier,
@@ -71,35 +64,33 @@ JOIN catalog_products AS b
 ORDER BY a.id, b.id;
 ```
 
-Expected matches are `(1, 1)` for the steel bottle and vacuum flask, and `(3, 3)`
-for the headphones. The glass carafe and plastic bottle have no matching pair.
+Expected matches: `(1, 1)` for the steel bottle and vacuum flask, and `(3, 3)` for
+the headphones. The glass carafe and plastic bottle have no matching pair.
 
-![Rendered MySQL output: the JOIN matches the steel bottle to the vacuum flask and the two headphone descriptions.](docs/screenshots/join.png)
+![AILIKE joins the steel bottle with the vacuum flask and the two headphone descriptions.](docs/screenshots/join.png)
 
-The two values reach Jev as separate `left` and `right` fields. Refer to those
-names when direction matters. Ordinary join conditions narrow the candidate
-pairs; each uncached comparison makes an API request.
+## More examples
 
-Use the function form for expressions, column-supplied prompts, and bound
-parameters: `ailike(a.description, b.description, ?)`. All arguments are strings;
-cast other types to text. The result is `1` for a match and `0` otherwise; a
-`NULL` argument produces `NULL`. Infix syntax takes one column and a literal
-prompt.
+<details>
+<summary>Find someone who prepares food</summary>
 
-Three-argument comparisons require v0.2.0 or newer; see the
-[upgrade instructions](docs/install.md#upgrade).
-Use SQL normalization and equality for exact identifiers.
-
-## Match dates described in words
-
-Use the function form for literal values:
+Match a pastry chef without searching for those exact words:
 
 ```sql
-SELECT ailike('2027-07-01', 'In July 2027, in the same calendar month and year.');
+SELECT film_id, title, description
+FROM sakila.film
+WHERE film_id BETWEEN 1 AND 8
+  AND description AILIKE 'The story features somebody whose profession is preparing food';
 ```
 
-Cast date columns to text. Use ordinary SQL to narrow candidates before applying
-the natural-language condition, as in this Sakila example:
+![AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.png)
+
+</details>
+
+<details>
+<summary>Match dates described in words</summary>
+
+Specify both month and year to avoid ambiguity:
 
 ```sql
 SELECT rental_id, rental_date
@@ -110,11 +101,11 @@ WHERE customer_id = 1
 ORDER BY rental_id;
 ```
 
-![Rendered MySQL output: twelve July 2005 rentals for customer 1 using the natural-language month and year condition.](docs/screenshots/dates.png)
+![AILIKE matches twelve July 2005 rentals for customer 1.](docs/screenshots/dates.png)
 
-Specify the year when it matters: `same month as July 27` is ambiguous. AILIKE
-returns a model judgment; use SQL date functions for exact date comparisons.
+AILIKE returns a model judgment. Use SQL date functions for exact comparisons.
 
-For AI coding agents: [AILIKE usage skill](skills/mysql-ailike/SKILL.md).
+</details>
 
-[GPL-2.0-only](LICENSE)
+[Contributing](CONTRIBUTING.md) · [Report a vulnerability](SECURITY.md) ·
+[AI coding agent skill](skills/mysql-ailike/SKILL.md) · [GPL-2.0-only](LICENSE)

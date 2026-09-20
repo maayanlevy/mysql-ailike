@@ -4,14 +4,48 @@ Filter rows and compare text columns with natural-language conditions, powered b
 [TypeSafe Jev](https://docs.typesafe.ai).
 
 ```sql
-SELECT *
-FROM film
-WHERE description AILIKE 'The story takes place somewhere in Asia';
+SELECT film_id, title, description
+FROM sakila.film
+WHERE film_id BETWEEN 1 AND 8
+  AND description AILIKE 'The story takes place somewhere in Asia';
 ```
+
+Find stories set in Asia when their descriptions mention China or India.
+
+![MySQL AILIKE matches three Sakila films set in Ancient China or India for the prompt about Asia.](docs/screenshots/asia.png)
 
 AILIKE is a native MySQL plugin that runs inside your existing server.
 
 **[Plugin bundles, installation, and verified compatibility →](docs/install.md)**
+
+Try the query with the [Sakila sample data](docs/sample-data.md).
+
+<details>
+<summary>Another semantic match: finding someone who prepares food</summary>
+
+```sql
+SELECT film_id, title, description
+FROM sakila.film
+WHERE film_id BETWEEN 1 AND 8
+  AND description AILIKE 'The story features somebody whose profession is preparing food';
+```
+
+The condition matches a description about a pastry chef.
+
+![MySQL AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.jpeg)
+
+</details>
+
+<details>
+<summary>Why does MySQL show “1 warning”?</summary>
+
+For infix queries, MySQL records a `Note` that the rewrite plugin translated
+`column AILIKE 'prompt'` into `ailike(column, 'prompt')`. Inspect it with
+`SHOW WARNINGS;`. This note does not indicate a failed query.
+
+![SHOW WARNINGS reports a Note explaining how the infix AILIKE query was rewritten into a function call.](docs/screenshots/rewrite-note.jpeg)
+
+</details>
 
 | Syntax | Question |
 | --- | --- |
@@ -82,6 +116,8 @@ WHERE customer_id = 1
              'In July 2005, in the same calendar month and year.')
 ORDER BY rental_id;
 ```
+
+![MySQL returns twelve July 2005 rentals for customer 1 using the natural-language month and year condition.](docs/screenshots/dates.jpeg)
 
 Specify the year when it matters: `same month as July 27` is ambiguous. AILIKE
 returns a model judgment; use SQL date functions for exact date comparisons.

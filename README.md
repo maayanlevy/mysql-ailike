@@ -1,16 +1,17 @@
-# AILIKE for MySQL
+# AILIKE for MySQL, powered by JEV
 
 A native MySQL plugin for filtering rows and comparing text columns with
 natural-language conditions, powered by [TypeSafe Jev](https://docs.typesafe.ai).
 
 **[Install and check compatibility](docs/install.md) · [Try the Docker demo](docs/sample-data.md#run-the-local-demo)**
 
-Preview release. Requires a TypeSafe API key; evaluated values and prompts are
+Preview release. 
+Requires a TypeSafe API key. Note: evaluated values and prompts are
 sent to TypeSafe.
 
 ## Match by meaning
 
-Find stories set in Asia when their descriptions mention China or India:
+Find columns based on NL meaning:
 
 ```sql
 SELECT film_id, title, description
@@ -30,7 +31,7 @@ WHERE film_id BETWEEN 1 AND 8
 | `ailike(left, right, prompt)` | Do these values satisfy the relationship? |
 
 AILIKE returns `1` for a match and `0` otherwise. Any `NULL` argument returns
-`NULL`. Arguments are strings; use `CAST(... AS CHAR)` for other types.
+`NULL`. Arguments are string. use `CAST(... AS CHAR)` for other types.
 
 Narrow candidates with ordinary SQL conditions: each uncached evaluation makes
 an API request.
@@ -72,9 +73,9 @@ the headphones. The glass carafe and plastic bottle have no matching pair.
 ## More examples
 
 <details>
-<summary>Find someone who prepares food</summary>
+<summary>Row-level semantic search</summary>
 
-Match a pastry chef without searching for those exact words:
+Match semantic meaning without searching for exact phrases:
 
 ```sql
 SELECT film_id, title, description
@@ -88,16 +89,14 @@ WHERE film_id BETWEEN 1 AND 8
 </details>
 
 <details>
-<summary>Match dates described in words</summary>
-
-Specify both month and year to avoid ambiguity:
+<summary>Format-independent date/period match</summary>
 
 ```sql
 SELECT rental_id, rental_date
 FROM sakila.rental
 WHERE customer_id = 1
   AND ailike(CAST(rental_date AS CHAR),
-             'In July 2005, in the same calendar month and year.')
+             'In July 2005')
 ORDER BY rental_id;
 ```
 

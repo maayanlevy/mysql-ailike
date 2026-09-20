@@ -12,7 +12,10 @@ WHERE film_id BETWEEN 1 AND 8
 
 Find stories set in Asia when their descriptions mention China or India.
 
-![MySQL AILIKE matches three Sakila films set in Ancient China or India for the prompt about Asia.](docs/screenshots/asia.png)
+![Rendered MySQL output: AILIKE matches three Sakila films set in Ancient China or India for the prompt about Asia.](docs/screenshots/asia.png)
+
+[Terminal-style renderings of MySQL output](docs/screenshots/README.md).
+Use `\G` instead of `;` in the MySQL client to display rows vertically.
 
 AILIKE is a native MySQL plugin that runs inside your existing server.
 
@@ -32,7 +35,7 @@ WHERE film_id BETWEEN 1 AND 8
 
 The condition matches a description about a pastry chef.
 
-![MySQL AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.jpeg)
+![Rendered MySQL output: AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.png)
 
 </details>
 
@@ -43,7 +46,7 @@ For infix queries, MySQL records a `Note` that the rewrite plugin translated
 `column AILIKE 'prompt'` into `ailike(column, 'prompt')`. Inspect it with
 `SHOW WARNINGS;`. This note does not indicate a failed query.
 
-![SHOW WARNINGS reports a Note explaining how the infix AILIKE query was rewritten into a function call.](docs/screenshots/rewrite-note.jpeg)
+![Rendered MySQL output: SHOW WARNINGS reports a Note explaining how the infix AILIKE query was rewritten into a function call.](docs/screenshots/rewrite-note.png)
 
 </details>
 
@@ -85,6 +88,8 @@ ORDER BY a.id, b.id;
 Expected matches are `(1, 1)` for the steel bottle and vacuum flask, and `(3, 3)`
 for the headphones. The glass carafe and plastic bottle have no matching pair.
 
+![Rendered MySQL output: the JOIN matches the steel bottle to the vacuum flask and the two headphone descriptions.](docs/screenshots/join.png)
+
 The two values reach Jev as separate `left` and `right` fields. Refer to those
 names when direction matters. Ordinary join conditions narrow the candidate
 pairs; each uncached comparison makes an API request.
@@ -119,7 +124,7 @@ WHERE customer_id = 1
 ORDER BY rental_id;
 ```
 
-![MySQL returns twelve July 2005 rentals for customer 1 using the natural-language month and year condition.](docs/screenshots/dates.jpeg)
+![Rendered MySQL output: twelve July 2005 rentals for customer 1 using the natural-language month and year condition.](docs/screenshots/dates.png)
 
 Specify the year when it matters: `same month as July 27` is ambiguous. AILIKE
 returns a model judgment; use SQL date functions for exact date comparisons.

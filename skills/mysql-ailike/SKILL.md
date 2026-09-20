@@ -64,19 +64,37 @@ WHERE ailike(r.description, f.condition_text);
 ```
 
 Use `ailike(left, right, prompt)` to compare two values. The third argument is the
-relationship to evaluate; both earlier arguments are data, not prompts:
+relationship to evaluate; both earlier arguments are data, not prompts.
+
+The [JOIN demo dataset](https://github.com/maayanlevy/mysql-ailike/blob/main/sql/join-demo.sql)
+defines three supplier products and three catalog products. With AILIKE configured,
+start the MySQL client from the repository root against a demo server and load it
+into a fresh database:
 
 ```sql
-SELECT a.id AS supplier_product_id, b.id AS catalog_product_id
+CREATE DATABASE ailike_join_demo;
+USE ailike_join_demo;
+SOURCE sql/join-demo.sql;
+```
+
+```sql
+SELECT a.id AS supplier_id, a.description AS supplier,
+       b.id AS catalog_id, b.description AS catalog
 FROM supplier_products AS a
 JOIN catalog_products AS b
   ON a.category_id = b.category_id
  AND ailike(
    a.description,
    b.description,
-   'Left and right describe the same product type, allowing different wording.'
- );
+   'Left and right describe the same kind of product, '
+   'with matching material and key features. Wording may differ.'
+ )
+ORDER BY a.id, b.id;
 ```
+
+Expected matches are `(1, 1)` for the steel bottle and vacuum flask, and `(3, 3)`
+for the headphones. The material and feature requirements exclude the plastic
+bottle and glass carafe; “same product type” alone does not express that condition.
 
 Jev receives the values as separate `left` and `right` fields. Reference those
 names in the prompt when the relationship is directional. Preserve their order;

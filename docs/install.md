@@ -198,6 +198,16 @@ and API failures abort the statement. Defaults are a 10-second request timeout
 and 1,000 uncached requests per expression. Input limits are 32 KiB per value and
 8 KiB for prompts. There are no automatic retries.
 
+## Troubleshooting
+
+### MySQL shows “1 warning” after an infix query
+
+For infix queries, MySQL records a `Note` that the rewrite plugin translated
+`column AILIKE 'prompt'` into `ailike(column, 'prompt')`. Inspect it with
+`SHOW WARNINGS;`. This note does not indicate a failed query.
+
+![Rendered MySQL output: SHOW WARNINGS reports the query rewrite as a Note.](screenshots/rewrite-note.png)
+
 ## Releasing
 
 Pushing a `v*` tag runs the release workflow: it builds and tests Linux AMD64 and

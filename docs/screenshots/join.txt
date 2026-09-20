@@ -1,0 +1,25 @@
+mysql> SELECT a.id AS supplier_id, a.description AS supplier,
+    ->        b.id AS catalog_id, b.description AS catalog
+    -> FROM supplier_products AS a
+    -> JOIN catalog_products AS b
+    ->   ON a.category_id = b.category_id
+    ->  AND ailike(
+    ->    a.description,
+    ->    b.description,
+    ->    'Left and right describe the same kind of product, '
+    ->    'with matching material and key features. Wording may differ.'
+    ->  )
+    -> ORDER BY a.id, b.id\G
+*************************** 1. row ***************************
+supplier_id: 1
+   supplier: 500 ml stainless steel vacuum-insulated water bottle for hot or cold drinks
+ catalog_id: 1
+    catalog: Stainless-steel vacuum flask, 0.5 L, for hot or cold beverages
+*************************** 2. row ***************************
+supplier_id: 3
+   supplier: Wireless over-ear headphones with active noise cancellation
+ catalog_id: 3
+    catalog: Bluetooth over-ear headphones with active noise cancelling
+2 rows in set (1.98 sec)
+
+mysql>

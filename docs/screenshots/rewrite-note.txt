@@ -1,0 +1,25 @@
+mysql> SELECT film_id, title
+    -> FROM sakila.film
+    -> WHERE film_id BETWEEN 1 AND 2
+    ->   AND description AILIKE 'Asia';
++---------+----------------+
+| film_id | title          |
++---------+----------------+
+|       2 | ACE GOLDFINGER |
++---------+----------------+
+1 row in set, 1 warning (1.06 sec)
+
+mysql> SHOW WARNINGS\G
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1105
+Message: Query 'SELECT film_id, title
+FROM sakila.film
+WHERE film_id BETWEEN 1 AND 2
+  AND description AILIKE 'Asia'' rewritten to 'SELECT film_id, title
+FROM sakila.film
+WHERE film_id BETWEEN 1 AND 2
+  AND ailike(description, 'Asia')' by a query rewrite plugin
+1 row in set (0.00 sec)
+
+mysql>

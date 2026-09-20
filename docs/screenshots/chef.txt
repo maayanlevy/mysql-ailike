@@ -1,0 +1,11 @@
+mysql> SELECT film_id, title, description
+    -> FROM sakila.film
+    -> WHERE film_id BETWEEN 1 AND 8
+    ->   AND description AILIKE 'The story features somebody whose profession is preparing food'\G
+*************************** 1. row ***************************
+    film_id: 5
+      title: AFRICAN EGG
+description: A Fast-Paced Documentary of a Pastry Chef And a Dentist who must Pursue a Forensic Psychologist in The Gulf of Mexico
+1 row in set, 1 warning (2.96 sec)
+
+mysql>

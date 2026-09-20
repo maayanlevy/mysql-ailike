@@ -32,7 +32,7 @@ WHERE film_id BETWEEN 1 AND 8
 
 The condition matches a description about a pastry chef.
 
-![MySQL AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.jpeg)
+![MySQL AILIKE matches AFRICAN EGG, whose description mentions a pastry chef.](docs/screenshots/chef.png)
 
 </details>
 
@@ -43,7 +43,7 @@ For infix queries, MySQL records a `Note` that the rewrite plugin translated
 `column AILIKE 'prompt'` into `ailike(column, 'prompt')`. Inspect it with
 `SHOW WARNINGS;`. This note does not indicate a failed query.
 
-![SHOW WARNINGS reports a Note explaining how the infix AILIKE query was rewritten into a function call.](docs/screenshots/rewrite-note.jpeg)
+![SHOW WARNINGS reports a Note explaining how the infix AILIKE query was rewritten into a function call.](docs/screenshots/rewrite-note.png)
 
 </details>
 
@@ -68,20 +68,24 @@ The dataset contains three supplier products and three catalog products.
 Pass both columns as values and describe their relationship in the prompt:
 
 ```sql
-SELECT a.id AS supplier_product_id, b.id AS catalog_product_id
+SELECT a.id AS supplier_id, a.description AS supplier,
+       b.id AS catalog_id, b.description AS catalog
 FROM supplier_products AS a
 JOIN catalog_products AS b
   ON a.category_id = b.category_id
  AND ailike(
    a.description,
    b.description,
-   'Left and right describe the same kind of product, with matching material and key features. Wording may differ.'
+   'Left and right describe the same kind of product, '
+   'with matching material and key features. Wording may differ.'
  )
 ORDER BY a.id, b.id;
 ```
 
 Expected matches are `(1, 1)` for the steel bottle and vacuum flask, and `(3, 3)`
 for the headphones. The glass carafe and plastic bottle have no matching pair.
+
+![AILIKE matches the steel bottle with the vacuum flask and the wireless headphones with Bluetooth headphones, showing both product descriptions.](docs/screenshots/join.png)
 
 The two values reach Jev as separate `left` and `right` fields. Refer to those
 names when direction matters. Ordinary join conditions narrow the candidate
@@ -117,7 +121,7 @@ WHERE customer_id = 1
 ORDER BY rental_id;
 ```
 
-![MySQL returns twelve July 2005 rentals for customer 1 using the natural-language month and year condition.](docs/screenshots/dates.jpeg)
+![MySQL returns twelve July 2005 rentals for customer 1 using the natural-language month and year condition.](docs/screenshots/dates.png)
 
 Specify the year when it matters: `same month as July 27` is ambiguous. AILIKE
 returns a model judgment; use SQL date functions for exact date comparisons.

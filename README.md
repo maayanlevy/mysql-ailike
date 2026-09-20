@@ -14,9 +14,6 @@ Find stories set in Asia when their descriptions mention China or India.
 
 ![Rendered MySQL output: AILIKE matches three Sakila films set in Ancient China or India for the prompt about Asia.](docs/screenshots/asia.png)
 
-[Terminal-style renderings of MySQL output](docs/screenshots/README.md).
-Use `\G` instead of `;` in the MySQL client to display rows vertically.
-
 AILIKE is a native MySQL plugin that runs inside your existing server.
 
 **[Plugin bundles, installation, and verified compatibility →](docs/install.md)**
